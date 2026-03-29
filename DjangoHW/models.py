@@ -31,7 +31,6 @@ class Task(models.Model):
         verbose_name_plural = "Tasks"
         ordering = ["-created_at"]
 
-
 class SubTask(models.Model):
     title = models.CharField(max_length=255, unique=True)
     description = models.TextField()
@@ -51,7 +50,6 @@ class SubTask(models.Model):
         verbose_name = "SubTask"
         verbose_name_plural = "SubTasks"
         ordering = ["-created_at"]
-
 
 class Category(models.Model):
     name = models.CharField(max_length=255, unique=True)
