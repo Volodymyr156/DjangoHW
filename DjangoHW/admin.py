@@ -1,6 +1,11 @@
 from django.contrib import admin
 from DjangoHW.models import Task, SubTask, Category
 
+class SubTaskInline(admin.TabularInline):
+    model = SubTask
+    extra = 1
+
+
 # Register your models here.
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
