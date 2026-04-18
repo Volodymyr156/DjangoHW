@@ -9,6 +9,7 @@ urlpatterns = [
 
     # Endpoints for getting tasks
     path('api/tasks/list/', views.task_list, name='task_list'),
+    path('api/tasks/by-day/', views.tasks_by_day_of_week, name='tasks_by_day_of_week'),
     path('api/tasks/<int:task_id>/', views.task_detail, name='task_detail'),
 
     # Endpoint for statistics
@@ -16,6 +17,7 @@ urlpatterns = [
 
     # SubTask endpoints
     path('api/subtasks/', views.SubTaskListCreateView.as_view(), name='subtask_list_create'),
+    path('api/subtasks/filtered/', views.subtasks_filtered, name='subtasks_filtered'),
     path('api/subtasks/<int:subtask_id>/', views.SubTaskDetailUpdateDeleteView.as_view(),
          name='subtask_detail_update_delete'),
 ]
