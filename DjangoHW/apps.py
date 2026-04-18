@@ -1,5 +1,5 @@
 from django.apps import AppConfig
 
 
-class DjangohwConfig(AppConfig):
+class DjangoHWConfig(AppConfig):
     name = 'DjangoHW'

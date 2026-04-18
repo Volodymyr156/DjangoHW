@@ -2,15 +2,14 @@ from django.db import models
 
 # Create your models here.
 
-STATUS_CHOICES = [
-    ("new", "New"),
-    ("in_progress", "In progress"),
-    ("pending", "Pending"),
-    ("blocked", "Blocked"),
-    ("done", "Done"),
-]
-
 class Task(models.Model):
+    STATUS_CHOICES = [
+        ("new", "New"),
+        ("in_progress", "In progress"),
+        ("pending", "Pending"),
+        ("blocked", "Blocked"),
+        ("done", "Done"),
+    ]
     title = models.CharField(max_length=255, unique=True)
     description = models.TextField()
     categories = models.ManyToManyField("Category")
@@ -37,7 +36,7 @@ class SubTask(models.Model):
     task = models.ForeignKey("Task", on_delete=models.CASCADE, related_name="subtasks")
     status = models.CharField(
         max_length=20,
-        choices=STATUS_CHOICES,
+        choices=Task.STATUS_CHOICES,
     )
     deadline = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
