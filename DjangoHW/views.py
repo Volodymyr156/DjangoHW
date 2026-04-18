@@ -1,8 +1,10 @@
 from django.utils import timezone
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.pagination import PageNumberPagination
 from .models import Task, SubTask
 from .serializers import TaskSerializer, TaskCreateSerializer, SubTaskSerializer, SubTaskCreateSerializer
 
@@ -85,11 +87,17 @@ class SubTaskListCreateView(APIView):
     
     def get(self, request):
         """
-        Get list of all subtasks
+        Get paginated list of all subtasks ordered by creation date (newest first)
         """
-        subtasks = SubTask.objects.all()
-        serializer = SubTaskSerializer(subtasks, many=True)
-        return Response(serializer.data)
+        subtasks = SubTask.objects.all().order_by('-created_at')
+        
+        # Apply pagination
+        paginator = PageNumberPagination()
+        paginator.page_size = 5
+        result_page = paginator.paginate_queryset(subtasks, request)
+        
+        serializer = SubTaskSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
     
     def post(self, request):
         """
@@ -158,5 +166,85 @@ class SubTaskDetailUpdateDeleteView(APIView):
         
         subtask.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['GET'])
+def tasks_by_day_of_week(request):
+    """
+    Get tasks filtered by day of the week.
+    If no day parameter is provided, returns all tasks.
+    Accepts day parameter in Russian (e.g., 'вторник') or English (e.g., 'tuesday')
+    """
+    day_param = request.GET.get('day', None)
+    
+    # Mapping of day names to weekday numbers (Monday=0, Sunday=6)
+    day_mapping = {
+        # Russian
+        'понедельник': 0, 'пн': 0,
+        'вторник': 1, 'вт': 1,
+        'среда': 2, 'ср': 2,
+        'четверг': 3, 'чт': 3,
+        'пятница': 4, 'пт': 4,
+        'суббота': 5, 'сб': 5,
+        'воскресенье': 6, 'вс': 6,
+        # English
+        'monday': 0, 'mon': 0,
+        'tuesday': 1, 'tue': 1,
+        'wednesday': 2, 'wed': 2,
+        'thursday': 3, 'thu': 3,
+        'friday': 4, 'fri': 4,
+        'saturday': 5, 'sat': 5,
+        'sunday': 6, 'sun': 6,
+    }
+    
+    if day_param:
+        day_param = day_param.lower().strip()
+        if day_param not in day_mapping:
+            return Response(
+                {'error': 'Invalid day parameter. Use day names like "понедельник", "вторник", "monday", "tuesday", etc.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        target_weekday = day_mapping[day_param]
+        tasks = Task.objects.filter(deadline__week_day=target_weekday + 1)  # Django uses 1-7 (Sunday=1)
+    else:
+        tasks = Task.objects.all()
+    
+    serializer = TaskSerializer(tasks, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+def subtasks_filtered(request):
+    """
+    Get filtered subtasks with pagination.
+    Filters:
+    - task_title: Filter by main task title (case-insensitive partial match)
+    - status: Filter by subtask status
+    
+    Default behavior: Returns all subtasks with pagination.
+    """
+    task_title = request.GET.get('task_title', None)
+    status_filter = request.GET.get('status', None)
+    
+    # Start with all subtasks, ordered by creation date (newest first)
+    subtasks = SubTask.objects.all().order_by('-created_at')
+    
+    # Apply filters
+    if task_title:
+        # Filter by main task title (case-insensitive)
+        subtasks = subtasks.filter(task__title__icontains=task_title)
+    
+    if status_filter:
+        # Filter by subtask status
+        subtasks = subtasks.filter(status__iexact=status_filter)
+    
+    # Apply pagination
+    paginator = PageNumberPagination()
+    paginator.page_size = 5
+    result_page = paginator.paginate_queryset(subtasks, request)
+    
+    serializer = SubTaskSerializer(result_page, many=True)
+    return paginator.get_paginated_response(serializer.data)
 
 
